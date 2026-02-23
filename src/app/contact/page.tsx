@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Contactez-nous",
   description:
     "Une question sur nos compléments alimentaires ? Contactez l'équipe Pharmacie Provençale par email ou téléphone. Nous vous répondons sous 24h.",
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 }
 
 export default function ContactPage() {
