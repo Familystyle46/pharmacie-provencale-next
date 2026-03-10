@@ -33,13 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAdmin = useCallback(
     async (userId: string) => {
       if (!supabase) return false
-      const timeout = new Promise<{ data: null }>((resolve) =>
-        setTimeout(() => resolve({ data: null }), 5000)
-      )
-      const { data } = await Promise.race([
-        supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
-        timeout,
-      ])
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle()
       return !!data
     },
     [supabase]
@@ -51,51 +50,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       return
     }
-    const init = async () => {
-      try {
-        const {
-          data: { session: s },
-        } = await supabase.auth.getSession()
-        if (!mounted) return
-        setSession(s)
-        setUser(s?.user ?? null)
-        if (s?.user) {
-          try {
-            const admin = await checkAdmin(s.user.id)
-            if (mounted) setIsAdmin(admin)
-          } catch {
-            // checkAdmin a échoué — session valide mais rôle non confirmé
-          }
-        }
-      } catch {
-        // getSession a échoué — pas de session disponible
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-    init()
 
+    // onAuthStateChange fires INITIAL_SESSION immediately on subscribe —
+    // no need for a separate getSession() call which caused duplicate checkAdmin races.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (!mounted) return
       setSession(s)
       setUser(s?.user ?? null)
+
       if (!s?.user) {
         setIsAdmin(false)
         if (mounted) setLoading(false)
         return
       }
-      // Ne re-vérifier le rôle que lors d'une vraie connexion, pas à chaque refresh de token
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-        try {
-          const admin = await checkAdmin(s.user.id)
-          if (mounted) setIsAdmin(admin)
-        } catch {
-          // ignore
-        }
+
+      try {
+        const admin = await checkAdmin(s.user.id)
+        if (mounted) setIsAdmin(admin)
+      } catch {
+        // réseau indisponible — on garde l'état précédent
+      } finally {
+        if (mounted) setLoading(false)
       }
-      if (mounted) setLoading(false)
     })
 
     return () => {
