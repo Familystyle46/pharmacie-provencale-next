@@ -64,9 +64,13 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
     try {
       const ext = file.name.split(".").pop() || "jpg"
       const path = `${ARTICLE_IMAGE_PREFIX}/${crypto.randomUUID()}.${ext}`
-      const { error: uploadError } = await supabase.storage
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Upload trop long — vérifiez votre connexion et réessayez")), 30000)
+      )
+      const uploadPromise = supabase.storage
         .from(STORAGE_BUCKET)
         .upload(path, file, { cacheControl: "3600", upsert: false })
+      const { error: uploadError } = await Promise.race([uploadPromise, timeout])
       if (uploadError) {
         setError(uploadError.message)
         return
