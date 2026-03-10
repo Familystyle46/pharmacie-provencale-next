@@ -106,7 +106,7 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
     }
 
     const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Délai dépassé — vérifiez votre connexion et réessayez")), 15000)
+      setTimeout(() => reject(new Error("Délai dépassé — vérifiez votre connexion et réessayez")), 30000)
     )
 
     setSaving(true)
