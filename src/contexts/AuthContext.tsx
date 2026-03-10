@@ -32,12 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAdmin = useCallback(
     async (userId: string) => {
       if (!supabase) return false
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle()
+      const timeout = new Promise<{ data: null }>((resolve) =>
+        setTimeout(() => resolve({ data: null }), 5000)
+      )
+      const { data } = await Promise.race([
+        supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
+        timeout,
+      ])
       return !!data
     },
     [supabase]
@@ -80,12 +81,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s)
       setUser(s?.user ?? null)
       if (s?.user) {
-        const admin = await checkAdmin(s.user.id)
-        if (mounted) setIsAdmin(admin)
+        try {
+          const admin = await checkAdmin(s.user.id)
+          if (mounted) setIsAdmin(admin)
+        } catch {
+          // ignore
+        }
       } else {
         setIsAdmin(false)
       }
-      setLoading(false)
+      if (mounted) setLoading(false)
     })
 
     return () => {
