@@ -50,17 +50,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     const init = async () => {
-      const {
-        data: { session: s },
-      } = await supabase.auth.getSession()
-      if (!mounted) return
-      setSession(s)
-      setUser(s?.user ?? null)
-      if (s?.user) {
-        const admin = await checkAdmin(s.user.id)
-        if (mounted) setIsAdmin(admin)
+      try {
+        const {
+          data: { session: s },
+        } = await supabase.auth.getSession()
+        if (!mounted) return
+        setSession(s)
+        setUser(s?.user ?? null)
+        if (s?.user) {
+          const admin = await checkAdmin(s.user.id)
+          if (mounted) setIsAdmin(admin)
+        }
+      } catch {
+        // session corrompue ou réseau indisponible — on continue sans session
+      } finally {
+        if (mounted) setLoading(false)
       }
-      setLoading(false)
     }
     init()
 
