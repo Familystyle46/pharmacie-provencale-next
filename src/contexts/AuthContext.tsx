@@ -58,11 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(s)
         setUser(s?.user ?? null)
         if (s?.user) {
-          const admin = await checkAdmin(s.user.id)
-          if (mounted) setIsAdmin(admin)
+          try {
+            const admin = await checkAdmin(s.user.id)
+            if (mounted) setIsAdmin(admin)
+          } catch {
+            // checkAdmin a échoué — session valide mais rôle non confirmé
+          }
         }
       } catch {
-        // session corrompue ou réseau indisponible — on continue sans session
+        // getSession a échoué — pas de session disponible
       } finally {
         if (mounted) setLoading(false)
       }
