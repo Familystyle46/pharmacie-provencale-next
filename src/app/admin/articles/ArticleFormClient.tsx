@@ -288,10 +288,10 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
 
       <button
         type="submit"
-        disabled={saving}
+        disabled={saving || uploading}
         className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer l'article"}
+        {saving ? "Enregistrement…" : uploading ? "Upload en cours…" : isEdit ? "Enregistrer" : "Créer l'article"}
       </button>
     </form>
   )
