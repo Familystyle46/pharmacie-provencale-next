@@ -81,15 +81,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return
       setSession(s)
       setUser(s?.user ?? null)
-      if (s?.user) {
+      if (!s?.user) {
+        setIsAdmin(false)
+        if (mounted) setLoading(false)
+        return
+      }
+      // Ne re-vérifier le rôle que lors d'une vraie connexion, pas à chaque refresh de token
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         try {
           const admin = await checkAdmin(s.user.id)
           if (mounted) setIsAdmin(admin)
         } catch {
           // ignore
         }
-      } else {
-        setIsAdmin(false)
       }
       if (mounted) setLoading(false)
     })
