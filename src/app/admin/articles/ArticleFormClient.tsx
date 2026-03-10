@@ -61,19 +61,23 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
     }
     setUploading(true)
     setError(null)
-    const ext = file.name.split(".").pop() || "jpg"
-    const path = `${ARTICLE_IMAGE_PREFIX}/${crypto.randomUUID()}.${ext}`
-    const { error: uploadError } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(path, file, { cacheControl: "3600", upsert: false })
-    if (uploadError) {
-      setError(uploadError.message)
+    try {
+      const ext = file.name.split(".").pop() || "jpg"
+      const path = `${ARTICLE_IMAGE_PREFIX}/${crypto.randomUUID()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, file, { cacheControl: "3600", upsert: false })
+      if (uploadError) {
+        setError(uploadError.message)
+        return
+      }
+      const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
+      setCoverImage(urlData.publicUrl)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur upload inattendue")
+    } finally {
       setUploading(false)
-      return
     }
-    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
-    setCoverImage(urlData.publicUrl)
-    setUploading(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
