@@ -106,20 +106,27 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
         : {}),
     }
 
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Délai dépassé — vérifiez votre connexion et réessayez")), 15000)
+    )
+
     setSaving(true)
     try {
       if (isEdit && initialData) {
-        const { error: updateError } = await supabase
-          .from("articles")
-          .update(payload)
-          .eq("id", initialData.id)
+        const { error: updateError } = await Promise.race([
+          supabase.from("articles").update(payload).eq("id", initialData.id),
+          timeout,
+        ])
         if (updateError) {
           setError(updateError.message)
           return
         }
         setSuccess(true)
       } else {
-        const { error: insertError } = await supabase.from("articles").insert(payload)
+        const { error: insertError } = await Promise.race([
+          supabase.from("articles").insert(payload),
+          timeout,
+        ])
         if (insertError) {
           setError(insertError.message)
           return
