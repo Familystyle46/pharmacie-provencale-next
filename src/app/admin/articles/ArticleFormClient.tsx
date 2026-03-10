@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { createClientComponent } from "@/lib/supabase/client"
@@ -28,6 +28,7 @@ interface ArticleFormClientProps {
 
 export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
   const isEdit = !!initialData?.id
+  const supabase = useMemo(() => createClientComponent(), [])
   const [title, setTitle] = useState(initialData?.title ?? "")
   const [slug, setSlug] = useState(initialData?.slug ?? "")
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "")
@@ -54,7 +55,6 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const supabase = createClientComponent()
     if (!supabase) {
       setError("Supabase non configuré")
       return
@@ -88,7 +88,6 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
     e.preventDefault()
     setError(null)
     setSuccess(false)
-    const supabase = createClientComponent()
     if (!supabase) {
       setError("Supabase non configuré")
       return
