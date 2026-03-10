@@ -99,34 +99,37 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
     }
 
     setSaving(true)
-    if (isEdit && initialData) {
-      const { error: updateError } = await supabase
-        .from("articles")
-        .update(payload)
-        .eq("id", initialData.id)
-      if (updateError) {
-        setError(updateError.message)
-        setSaving(false)
-        return
+    try {
+      if (isEdit && initialData) {
+        const { error: updateError } = await supabase
+          .from("articles")
+          .update(payload)
+          .eq("id", initialData.id)
+        if (updateError) {
+          setError(updateError.message)
+          return
+        }
+        setSuccess(true)
+      } else {
+        const { error: insertError } = await supabase.from("articles").insert(payload)
+        if (insertError) {
+          setError(insertError.message)
+          return
+        }
+        setSuccess(true)
+        setTitle("")
+        setSlug("")
+        setExcerpt("")
+        setContent("")
+        setCategory("bien_etre")
+        setCoverImage(null)
+        setIsPublished(false)
       }
-      setSuccess(true)
-    } else {
-      const { error: insertError } = await supabase.from("articles").insert(payload)
-      if (insertError) {
-        setError(insertError.message)
-        setSaving(false)
-        return
-      }
-      setSuccess(true)
-      setTitle("")
-      setSlug("")
-      setExcerpt("")
-      setContent("")
-      setCategory("bien_etre")
-      setCoverImage(null)
-      setIsPublished(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inattendue")
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (success && isEdit) {
