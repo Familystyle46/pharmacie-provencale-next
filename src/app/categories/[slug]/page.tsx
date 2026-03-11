@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Constants } from "@/types/supabase"
 import type { Database } from "@/types/supabase"
 
-export const revalidate = 7200
+export const revalidate = 60
 
 const CATEGORY_SLUGS = Constants.public.Enums.product_category
 

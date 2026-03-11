@@ -3,6 +3,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Sparkles } from "lucide-react"
 
+export const revalidate = 60
+
 export default async function HomePage() {
   const supabase = createServerClient()
   let featured: { id: string; title: string; slug: string; sale_price: number; original_price: number; images: string[] }[] = []

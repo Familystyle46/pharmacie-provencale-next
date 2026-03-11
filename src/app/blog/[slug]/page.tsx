@@ -6,7 +6,7 @@ import Image from "next/image"
 import { MarkdownContent } from "@/components/content/MarkdownContent"
 import { RelatedProducts } from "@/components/blog/RelatedProducts"
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export async function generateStaticParams() {
   const supabase = createServerClient()
