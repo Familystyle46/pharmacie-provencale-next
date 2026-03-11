@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Plus, Pencil, Trash2, Package, FileText } from "lucide-react"
@@ -20,7 +20,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 export function AdminPageClient() {
-  const supabase = createClientComponent()
+  const supabase = useMemo(() => createClientComponent(), [])
   const [activeTab, setActiveTab] = useState<"produits" | "articles">("produits")
   const [products, setProducts] = useState<ProductRow[]>([])
   const [articles, setArticles] = useState<ArticleRow[]>([])
