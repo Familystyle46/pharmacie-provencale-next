@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { createClientComponent } from "@/lib/supabase/client"
@@ -28,7 +28,6 @@ interface ArticleFormClientProps {
 
 export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
   const isEdit = !!initialData?.id
-  const supabase = useMemo(() => createClientComponent(), [])
   const [title, setTitle] = useState(initialData?.title ?? "")
   const [slug, setSlug] = useState(initialData?.slug ?? "")
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "")
@@ -55,39 +54,33 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const supabase = createClientComponent()
     if (!supabase) {
       setError("Supabase non configuré")
       return
     }
     setUploading(true)
     setError(null)
-    try {
-      const ext = file.name.split(".").pop() || "jpg"
-      const path = `${ARTICLE_IMAGE_PREFIX}/${crypto.randomUUID()}.${ext}`
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Upload trop long — vérifiez votre connexion et réessayez")), 30000)
-      )
-      const uploadPromise = supabase.storage
-        .from(STORAGE_BUCKET)
-        .upload(path, file, { cacheControl: "3600", upsert: false })
-      const { error: uploadError } = await Promise.race([uploadPromise, timeout])
-      if (uploadError) {
-        setError(uploadError.message)
-        return
-      }
-      const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
-      setCoverImage(urlData.publicUrl)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur upload inattendue")
-    } finally {
+    const ext = file.name.split(".").pop() || "jpg"
+    const path = `${ARTICLE_IMAGE_PREFIX}/${crypto.randomUUID()}.${ext}`
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, file, { cacheControl: "3600", upsert: false })
+    if (uploadError) {
+      setError(uploadError.message)
       setUploading(false)
+      return
     }
+    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
+    setCoverImage(urlData.publicUrl)
+    setUploading(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccess(false)
+    const supabase = createClientComponent()
     if (!supabase) {
       setError("Supabase non configuré")
       return
@@ -105,45 +98,35 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
         : {}),
     }
 
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Délai dépassé — vérifiez votre connexion et réessayez")), 30000)
-    )
-
     setSaving(true)
-    try {
-      if (isEdit && initialData) {
-        const { error: updateError } = await Promise.race([
-          supabase.from("articles").update(payload).eq("id", initialData.id),
-          timeout,
-        ])
-        if (updateError) {
-          setError(updateError.message)
-          return
-        }
-        setSuccess(true)
-      } else {
-        const { error: insertError } = await Promise.race([
-          supabase.from("articles").insert(payload),
-          timeout,
-        ])
-        if (insertError) {
-          setError(insertError.message)
-          return
-        }
-        setSuccess(true)
-        setTitle("")
-        setSlug("")
-        setExcerpt("")
-        setContent("")
-        setCategory("bien_etre")
-        setCoverImage(null)
-        setIsPublished(false)
+    if (isEdit && initialData) {
+      const { error: updateError } = await supabase
+        .from("articles")
+        .update(payload)
+        .eq("id", initialData.id)
+      if (updateError) {
+        setError(updateError.message)
+        setSaving(false)
+        return
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inattendue")
-    } finally {
-      setSaving(false)
+      setSuccess(true)
+    } else {
+      const { error: insertError } = await supabase.from("articles").insert(payload)
+      if (insertError) {
+        setError(insertError.message)
+        setSaving(false)
+        return
+      }
+      setSuccess(true)
+      setTitle("")
+      setSlug("")
+      setExcerpt("")
+      setContent("")
+      setCategory("bien_etre")
+      setCoverImage(null)
+      setIsPublished(false)
     }
+    setSaving(false)
   }
 
   if (success && isEdit) {
@@ -298,10 +281,10 @@ export function ArticleFormClient({ initialData }: ArticleFormClientProps) {
 
       <button
         type="submit"
-        disabled={saving || uploading}
+        disabled={saving}
         className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {saving ? "Enregistrement…" : uploading ? "Upload en cours…" : isEdit ? "Enregistrer" : "Créer l'article"}
+        {saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer l'article"}
       </button>
     </form>
   )

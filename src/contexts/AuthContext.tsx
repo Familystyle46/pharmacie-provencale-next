@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react"
@@ -28,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const supabase = useMemo(() => createClientComponent(), [])
+  const supabase = createClientComponent()
 
   const checkAdmin = useCallback(
     async (userId: string) => {
@@ -50,30 +49,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       return
     }
+    const init = async () => {
+      const {
+        data: { session: s },
+      } = await supabase.auth.getSession()
+      if (!mounted) return
+      setSession(s)
+      setUser(s?.user ?? null)
+      if (s?.user) {
+        const admin = await checkAdmin(s.user.id)
+        if (mounted) setIsAdmin(admin)
+      }
+      setLoading(false)
+    }
+    init()
 
-    // onAuthStateChange fires INITIAL_SESSION immediately on subscribe —
-    // no need for a separate getSession() call which caused duplicate checkAdmin races.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (!mounted) return
       setSession(s)
       setUser(s?.user ?? null)
-
-      if (!s?.user) {
-        setIsAdmin(false)
-        if (mounted) setLoading(false)
-        return
-      }
-
-      try {
+      if (s?.user) {
         const admin = await checkAdmin(s.user.id)
         if (mounted) setIsAdmin(admin)
-      } catch {
-        // réseau indisponible — on garde l'état précédent
-      } finally {
-        if (mounted) setLoading(false)
+      } else {
+        setIsAdmin(false)
       }
+      setLoading(false)
     })
 
     return () => {
