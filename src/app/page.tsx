@@ -2,8 +2,25 @@ import { createServerClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Sparkles } from "lucide-react"
+import type { Metadata } from "next"
 
 export const revalidate = 60
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pharmacie-provencale.com"
+
+export const metadata: Metadata = {
+  title: "Pharmacie Provençale — Compléments alimentaires naturels à Morières-lès-Avignon",
+  description:
+    "Découvrez notre sélection de compléments alimentaires naturels, fabriqués en France avec des ingrédients premium. Conseils santé, livraison offerte dès 49 €.",
+  alternates: { canonical: BASE_URL },
+  openGraph: {
+    title: "Pharmacie Provençale — Compléments alimentaires naturels",
+    description:
+      "Compléments alimentaires naturels, parapharmacie et conseils santé à Morières-lès-Avignon. Livraison offerte dès 49 €.",
+    url: BASE_URL,
+    type: "website",
+  },
+}
 
 export default async function HomePage() {
   const supabase = createServerClient()

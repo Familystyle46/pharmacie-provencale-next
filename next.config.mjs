@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      // Ancien slug /produit/ (sans "s") → /produits/ — corrige les URLs indexées en 404
+      {
+        source: "/produit/:slug*",
+        destination: "/produits/:slug*",
+        permanent: true,
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {

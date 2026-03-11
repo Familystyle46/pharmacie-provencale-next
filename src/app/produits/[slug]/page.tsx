@@ -21,6 +21,8 @@ export async function generateStaticParams() {
   return (produits ?? []).map((p) => ({ slug: p.slug }))
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pharmacie-provencale.com"
+
 export async function generateMetadata({
   params,
 }: {
@@ -41,14 +43,25 @@ export async function generateMetadata({
     (typeof produit.description === "string"
       ? produit.description.slice(0, 160)
       : "")
+  const canonical = `${BASE_URL}/produits/${slug}`
+  const images = image ? [{ url: image, width: 1200, height: 630, alt: produit.title }] : []
   return {
     title: produit.title,
     description: description || undefined,
+    alternates: { canonical },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
     openGraph: {
       title: produit.title,
       description: description || undefined,
-      images: image ? [{ url: image }] : [],
+      images,
       type: "website",
+      url: canonical,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: produit.title,
+      description: description || undefined,
+      images: image ? [image] : [],
     },
   }
 }

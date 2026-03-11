@@ -6,10 +6,21 @@ import { ArrowRight } from "lucide-react"
 
 export const revalidate = 60
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pharmacie-provencale.com"
+
 export const metadata: Metadata = {
-  title: "Blog",
-  description: "Conseils santé, actualités et dossiers par la Pharmacie Provençale.",
+  title: "Blog Santé — Conseils & Actualités",
+  description:
+    "Conseils santé, guides pratiques et actualités rédigés par les pharmaciens de la Pharmacie Provençale. Nutrition, bien-être, minceur et plus.",
+  alternates: { canonical: `${BASE_URL}/blog` },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+  openGraph: {
+    title: "Blog Santé — Conseils & Actualités",
+    description:
+      "Conseils santé et guides pratiques par des pharmaciens : nutrition, bien-être, minceur, sommeil.",
+    url: `${BASE_URL}/blog`,
+    type: "website",
+  },
 }
 
 const CATEGORY_LABELS: Record<string, string> = {

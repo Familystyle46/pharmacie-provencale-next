@@ -5,10 +5,20 @@ import Image from "next/image"
 
 export const revalidate = 60
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pharmacie-provencale.com"
+
 export const metadata: Metadata = {
-  title: "Tous les produits",
+  title: "Catalogue — Compléments alimentaires naturels",
   description:
-    "Découvrez notre gamme complète de produits pharmaceutiques et parapharmacie.",
+    "Explorez notre catalogue de compléments alimentaires naturels : minceur, énergie, immunité, beauté. Produits sélectionnés par des pharmaciens.",
+  alternates: { canonical: `${BASE_URL}/produits` },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+  openGraph: {
+    title: "Catalogue — Compléments alimentaires naturels",
+    description: "Compléments alimentaires sélectionnés par des pharmaciens : minceur, énergie, immunité, beauté.",
+    url: `${BASE_URL}/produits`,
+    type: "website",
+  },
 }
 
 export default async function ProduitsPage() {

@@ -8,6 +8,8 @@ import { RelatedProducts } from "@/components/blog/RelatedProducts"
 
 export const revalidate = 60
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pharmacie-provencale.com"
+
 export async function generateStaticParams() {
   const supabase = createServerClient()
   if (!supabase) return []
@@ -29,21 +31,34 @@ export async function generateMetadata({
   if (!supabase) return { title: "Blog" }
   const { data: article } = await supabase
     .from("articles")
-    .select("title, meta_description, excerpt, cover_image")
+    .select("title, meta_description, excerpt, cover_image, published_at, author_name")
     .eq("slug", slug)
     .single()
   if (!article) return { title: "Article introuvable" }
-  const description =
-    article.meta_description ?? article.excerpt?.slice(0, 160) ?? ""
+  const description = article.meta_description ?? article.excerpt?.slice(0, 160) ?? ""
+  const canonical = `${BASE_URL}/blog/${slug}`
+  const images = article.cover_image
+    ? [{ url: article.cover_image, width: 1200, height: 630, alt: article.title }]
+    : []
   return {
     title: article.title,
     description: description || undefined,
+    alternates: { canonical },
     robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
     openGraph: {
       title: article.title,
       description: description || undefined,
-      images: article.cover_image ? [{ url: article.cover_image }] : [],
+      images,
       type: "article",
+      url: canonical,
+      publishedTime: article.published_at ?? undefined,
+      authors: article.author_name ? [article.author_name] : ["Pharmacie Provençale"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: description || undefined,
+      images: article.cover_image ? [article.cover_image] : [],
     },
   }
 }
@@ -64,8 +79,33 @@ export default async function BlogPostPage({
     .single()
   if (!article) notFound()
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.meta_description ?? article.excerpt ?? "",
+    image: article.cover_image ? [article.cover_image] : [],
+    datePublished: article.published_at ?? article.created_at,
+    dateModified: article.updated_at ?? article.published_at ?? article.created_at,
+    author: {
+      "@type": "Person",
+      name: article.author_name ?? "Pharmacie Provençale",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Pharmacie Provençale",
+      url: BASE_URL,
+    },
+    url: `${BASE_URL}/blog/${slug}`,
+    mainEntityOfPage: `${BASE_URL}/blog/${slug}`,
+  }
+
   return (
     <main className="min-h-screen p-6 md:p-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <div className="mx-auto max-w-3xl">
         <nav className="mb-6 text-sm text-muted-foreground">
           <Link href="/blog">Blog</Link>
@@ -77,7 +117,7 @@ export default async function BlogPostPage({
             <div className="relative mb-8 aspect-video overflow-hidden rounded-lg bg-muted">
               <Image
                 src={article.cover_image}
-                alt=""
+                alt={article.title}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 800px"
