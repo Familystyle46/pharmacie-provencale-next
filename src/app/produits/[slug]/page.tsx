@@ -94,6 +94,18 @@ export default async function ProduitPage({
     : []
   const reviews = reviewsData ?? []
 
+  const faqJsonLd = faq.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faq.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      }
+    : null
+
   return (
     <main className="min-h-screen p-6 md:p-10">
       <ProductJsonLd
@@ -107,6 +119,12 @@ export default async function ProduitPage({
           disponible: (produit.stock ?? 0) > 0,
         }}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       <div className="mx-auto max-w-4xl">
         <nav className="mb-6 text-sm text-muted-foreground">
           <Link href="/produits">Produits</Link>

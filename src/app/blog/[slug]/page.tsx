@@ -100,12 +100,31 @@ export default async function BlogPostPage({
     mainEntityOfPage: `${BASE_URL}/blog/${slug}`,
   }
 
+  const faqs = Array.isArray(article.faqs) && article.faqs.length > 0 ? article.faqs : null
+  const faqJsonLd = faqs
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map((faq: { question: string; answer: string }) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: { "@type": "Answer", text: faq.answer },
+        })),
+      }
+    : null
+
   return (
     <main className="min-h-screen p-6 md:p-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       <div className="mx-auto max-w-3xl">
         <nav className="mb-6 text-sm text-muted-foreground">
           <Link href="/blog">Blog</Link>
