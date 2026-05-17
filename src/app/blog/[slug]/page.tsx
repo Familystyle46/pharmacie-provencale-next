@@ -31,7 +31,7 @@ export async function generateMetadata({
   if (!supabase) return { title: "Blog" }
   const { data: article } = await supabase
     .from("articles")
-    .select("title, meta_description, excerpt, cover_image, published_at, author_name")
+    .select("title, meta_description, excerpt, cover_image, published_at, updated_at, author_name")
     .eq("slug", slug)
     .single()
   if (!article) return { title: "Article introuvable" }
@@ -40,9 +40,12 @@ export async function generateMetadata({
   const images = article.cover_image
     ? [{ url: article.cover_image, width: 1200, height: 630, alt: article.title }]
     : []
+  const authorName = article.author_name ?? "Pharmacie Provençale"
+  const modifiedTime = article.updated_at ?? article.published_at ?? undefined
   return {
-    title: article.title,
+    title: { absolute: article.title },
     description: description || undefined,
+    authors: [{ name: authorName }],
     alternates: { canonical },
     robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
     openGraph: {
@@ -52,13 +55,17 @@ export async function generateMetadata({
       type: "article",
       url: canonical,
       publishedTime: article.published_at ?? undefined,
-      authors: article.author_name ? [article.author_name] : ["Pharmacie Provençale"],
+      modifiedTime,
+      authors: [authorName],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description: description || undefined,
       images: article.cover_image ? [article.cover_image] : [],
+    },
+    other: {
+      "article:modified_time": modifiedTime ?? "",
     },
   }
 }
@@ -79,25 +86,42 @@ export default async function BlogPostPage({
     .single()
   if (!article) notFound()
 
+  const pageUrl = `${BASE_URL}/blog/${slug}`
+  const authorName = article.author_name ?? "Pharmacie Provençale"
+  const datePublished = article.published_at ?? article.created_at
+  const dateModified = article.updated_at ?? datePublished
+  const hasBeenUpdated = article.updated_at && article.updated_at !== datePublished
+
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.title,
     description: article.meta_description ?? article.excerpt ?? "",
     image: article.cover_image ? [article.cover_image] : [],
-    datePublished: article.published_at ?? article.created_at,
-    dateModified: article.updated_at ?? article.published_at ?? article.created_at,
+    datePublished,
+    dateModified,
     author: {
       "@type": "Person",
-      name: article.author_name ?? "Pharmacie Provençale",
+      name: authorName,
+      ...(article.author_title && { jobTitle: article.author_title }),
     },
     publisher: {
       "@type": "Organization",
       name: "Pharmacie Provençale",
       url: BASE_URL,
     },
-    url: `${BASE_URL}/blog/${slug}`,
-    mainEntityOfPage: `${BASE_URL}/blog/${slug}`,
+    url: pageUrl,
+    mainEntityOfPage: pageUrl,
+  }
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: BASE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: article.title, item: pageUrl },
+    ],
   }
 
   const faqs = Array.isArray(article.faqs) && article.faqs.length > 0 ? article.faqs : null
@@ -105,7 +129,7 @@ export default async function BlogPostPage({
     ? {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        mainEntity: faqs.map((faq: { question: string; answer: string }) => ({
+        mainEntity: (faqs as Array<{ question: string; answer: string }>).map((faq) => ({
           "@type": "Question",
           name: faq.question,
           acceptedAnswer: { "@type": "Answer", text: faq.answer },
@@ -119,6 +143,10 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {faqJsonLd && (
         <script
           type="application/ld+json"
@@ -126,9 +154,11 @@ export default async function BlogPostPage({
         />
       )}
       <div className="mx-auto max-w-3xl">
-        <nav className="mb-6 text-sm text-muted-foreground">
+        <nav aria-label="Fil d'Ariane" className="mb-6 text-sm text-muted-foreground">
+          <Link href="/">Accueil</Link>
+          <span className="mx-2" aria-hidden="true">/</span>
           <Link href="/blog">Blog</Link>
-          <span className="mx-2">/</span>
+          <span className="mx-2" aria-hidden="true">/</span>
           <span>{article.title}</span>
         </nav>
         <article>
@@ -145,16 +175,66 @@ export default async function BlogPostPage({
             </div>
           )}
           <h1 className="text-3xl font-bold">{article.title}</h1>
-          {article.published_at && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              {new Date(article.published_at).toLocaleDateString("fr-FR")}
-            </p>
-          )}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            {authorName && (
+              <span>
+                Par <span className="font-medium text-foreground">{authorName}</span>
+                {article.author_title && (
+                  <span className="text-muted-foreground">, {article.author_title}</span>
+                )}
+              </span>
+            )}
+            {datePublished && (
+              <span>
+                Publié le{" "}
+                <time dateTime={datePublished}>
+                  {new Date(datePublished).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </time>
+              </span>
+            )}
+            {hasBeenUpdated && (
+              <span>
+                · Mis à jour le{" "}
+                <time dateTime={dateModified}>
+                  {new Date(dateModified).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </time>
+              </span>
+            )}
+            {article.reading_time && (
+              <span>{article.reading_time} min de lecture</span>
+            )}
+          </div>
           <MarkdownContent
             content={article.content}
             size="lg"
             className="mt-8"
           />
+          {(article.author_name || article.author_bio) && (
+            <div className="mt-10 rounded-lg border bg-muted/30 p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                À propos de l&apos;auteur
+              </p>
+              <p className="mt-1 font-semibold text-foreground">
+                {article.author_name}
+                {article.author_title && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    — {article.author_title}
+                  </span>
+                )}
+              </p>
+              {article.author_bio && (
+                <p className="mt-2 text-sm text-muted-foreground">{article.author_bio}</p>
+              )}
+            </div>
+          )}
         </article>
         <section className="mt-12 border-t pt-8">
           <RelatedProducts category={article.category} />

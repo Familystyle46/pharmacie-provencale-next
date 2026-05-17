@@ -36,6 +36,12 @@ export const metadata: Metadata = {
   },
 }
 
+const sameAsUrls = [
+  process.env.NEXT_PUBLIC_GOOGLE_BUSINESS_URL,
+  process.env.NEXT_PUBLIC_FACEBOOK_URL,
+  process.env.NEXT_PUBLIC_INSTAGRAM_URL,
+].filter(Boolean) as string[]
+
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": ["Pharmacy", "LocalBusiness"],
@@ -45,6 +51,7 @@ const organizationJsonLd = {
   image: `${BASE_URL}/logo.png`,
   description:
     "Pharmacie à Morières-lès-Avignon spécialisée en compléments alimentaires naturels et parapharmacie.",
+  priceRange: "€€",
   address: {
     "@type": "PostalAddress",
     streetAddress: "Route de Morières",
@@ -68,7 +75,7 @@ const organizationJsonLd = {
       closes: "13:00",
     },
   ],
-  sameAs: [],
+  ...(sameAsUrls.length > 0 && { sameAs: sameAsUrls }),
 }
 
 export default function RootLayout({

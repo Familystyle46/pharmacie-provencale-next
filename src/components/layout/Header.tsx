@@ -30,13 +30,6 @@ export function Header() {
           <Link href="/contact" className="text-muted-foreground transition hover:text-foreground">
             Contact
           </Link>
-          <Link
-            href="/admin"
-            className="rounded-md px-2 py-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            title="Admin"
-          >
-            Admin
-          </Link>
         </nav>
       </div>
     </header>
